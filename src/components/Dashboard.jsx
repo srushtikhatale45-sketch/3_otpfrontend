@@ -1,6 +1,23 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useLogout } from '../hooks/useAuth';
+import { useToast } from '../context/ToastContext';
 
-const Dashboard = ({ user, onLogout }) => {
+const Dashboard = ({ user }) => {
+  const navigate = useNavigate();
+  const { showToast } = useToast();
+  const logoutMutation = useLogout();
+
+  const handleLogout = async () => {
+    try {
+      await logoutMutation.mutateAsync();
+      showToast('Logged out successfully', 'success');
+      navigate('/');
+    } catch (error) {
+      showToast('Failed to logout', 'error');
+    }
+  };
+
   const getChannelIcon = (channel) => {
     switch(channel) {
       case 'sms':
@@ -35,7 +52,10 @@ const Dashboard = ({ user, onLogout }) => {
               <h1 className="text-2xl font-bold text-gray-800">Welcome, {user?.name}!</h1>
               <p className="text-gray-600 mt-1">Your account is verified via {user?.preferredChannel?.toUpperCase()}</p>
             </div>
-            <button onClick={onLogout} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors">
+            <button 
+              onClick={handleLogout}
+              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors"
+            >
               Logout
             </button>
           </div>
