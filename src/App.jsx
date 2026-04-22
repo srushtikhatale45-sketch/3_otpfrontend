@@ -4,31 +4,32 @@ import { ToastProvider } from './context/ToastContext';
 import { useAuthCheck } from './hooks/useAuth';
 import LoginChoice from './pages/LoginChoice';
 import SMSAuthPage from './pages/SMSAuthPage';
-import WhatsAppAuthPage from "./pages/WhatsAppAuthPage";
+import WhatsAppAuthPage from './pages/WhatsAppAuthPage';
 import EmailAuthPage from './pages/EmailAuthPage';
 import Dashboard from './components/Dashboard';
 import LoadingSpinner from './components/common/LoadingSpinner';
-import { useLogout } from './hooks/useAuth';
-import { useToast } from './context/ToastContext';
 
+// Protected Route component
 const ProtectedRoute = ({ children }) => {
   const { data: authData, isLoading } = useAuthCheck();
-  if (isLoading) return <LoadingSpinner />;
-  return authData?.authenticated ? children : <Navigate to="/" replace />;
+  
+  if (isLoading) {
+    return <LoadingSpinner />;
+  }
+  
+  if (!authData?.authenticated) {
+    return <Navigate to="/" replace />;
+  }
+  
+  return children;
 };
 
 function AppContent() {
-  const logoutMutation = useLogout();
   const { data: authData, isLoading } = useAuthCheck();
-  const { showToast } = useToast();
 
-  if (isLoading) return <LoadingSpinner />;
-
-  const handleLogout = async () => {
-    await logoutMutation.mutateAsync();
-    showToast('Logged out successfully', 'success');
-    window.location.href = '/';
-  };
+  if (isLoading) {
+    return <LoadingSpinner />;
+  }
 
   return (
     <Routes>
@@ -36,11 +37,14 @@ function AppContent() {
       <Route path="/login/sms" element={<SMSAuthPage />} />
       <Route path="/login/whatsapp" element={<WhatsAppAuthPage />} />
       <Route path="/login/email" element={<EmailAuthPage />} />
-      <Route path="/dashboard" element={
-        <ProtectedRoute>
-          <Dashboard user={authData?.user} onLogout={handleLogout} />
-        </ProtectedRoute>
-      } />
+      <Route 
+        path="/dashboard" 
+        element={
+          <ProtectedRoute>
+            <Dashboard user={authData?.user} />
+          </ProtectedRoute>
+        } 
+      />
     </Routes>
   );
 }
