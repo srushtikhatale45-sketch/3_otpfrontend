@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLogout } from '../hooks/useAuth';
 import { useToast } from '../context/ToastContext';
@@ -8,9 +8,24 @@ const Dashboard = ({ user }) => {
   const { showToast } = useToast();
   const logoutMutation = useLogout();
 
+  // Debug: Log user data when component mounts
+  useEffect(() => {
+    console.log('📊 Dashboard mounted with user prop:', user);
+    console.log('📊 Preferred channel from prop:', user?.preferredChannel);
+    
+    // Also check localStorage
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      const parsedUser = JSON.parse(storedUser);
+      console.log('📊 User from localStorage:', parsedUser);
+      console.log('📊 Preferred channel from localStorage:', parsedUser?.preferredChannel);
+    }
+  }, [user]);
+
   const handleLogout = async () => {
     try {
       await logoutMutation.mutateAsync();
+      localStorage.removeItem('user');
       showToast('Logged out successfully', 'success');
       navigate('/');
     } catch (error) {
@@ -19,7 +34,8 @@ const Dashboard = ({ user }) => {
   };
 
   const getChannelIcon = (channel) => {
-    switch(channel) {
+    console.log('🎨 Getting icon for channel:', channel);
+    switch(channel?.toLowerCase()) {
       case 'sms':
         return (
           <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -39,9 +55,16 @@ const Dashboard = ({ user }) => {
           </svg>
         );
       default:
-        return null;
+        return (
+          <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" strokeWidth={2} />
+          </svg>
+        );
     }
   };
+
+  const displayChannel = user?.preferredChannel || 'Not Set';
+  console.log('📊 Displaying channel:', displayChannel);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -49,8 +72,10 @@ const Dashboard = ({ user }) => {
         <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-bold text-gray-800">Welcome, {user?.name}!</h1>
-              <p className="text-gray-600 mt-1">Your account is verified via {user?.preferredChannel?.toUpperCase()}</p>
+              <h1 className="text-2xl font-bold text-gray-800">Welcome, {user?.name || 'User'}!</h1>
+              <p className="text-gray-600 mt-1">
+                Your account is verified via {displayChannel.toUpperCase()}
+              </p>
             </div>
             <button 
               onClick={handleLogout}
@@ -67,7 +92,7 @@ const Dashboard = ({ user }) => {
             <div className="space-y-3">
               <div>
                 <label className="text-sm text-gray-500">Name</label>
-                <p className="text-lg font-medium text-gray-800">{user?.name}</p>
+                <p className="text-lg font-medium text-gray-800">{user?.name || 'Not provided'}</p>
               </div>
               {user?.email && (
                 <div>
@@ -89,7 +114,7 @@ const Dashboard = ({ user }) => {
                 <label className="text-sm text-gray-500">Preferred Channel</label>
                 <div className="flex items-center gap-1">
                   {getChannelIcon(user?.preferredChannel)}
-                  <p className="text-lg font-medium text-gray-800">{user?.preferredChannel?.toUpperCase()}</p>
+                  <p className="text-lg font-medium text-gray-800">{displayChannel.toUpperCase()}</p>
                 </div>
               </div>
             </div>

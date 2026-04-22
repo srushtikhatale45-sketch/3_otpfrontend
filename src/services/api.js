@@ -6,7 +6,6 @@ const getBaseURL = () => {
   }
   return 'http://localhost:5000/api';
 };
-
 const API_BASE_URL = getBaseURL();
 console.log(`🌐 API Base URL: ${API_BASE_URL}`);
 
@@ -47,13 +46,41 @@ const clearUserData = () => {
 
 export const authService = {
   checkAuth: async () => {
-    try {
-      const response = await api.get('/auth/check');
+  try {
+    const response = await api.get('/auth/check');
+    console.log('✅ Auth check response:', response.data);
+
+    // ✅ If backend works → use it
+    if (response.data?.authenticated) {
       return response.data;
-    } catch (error) {
-      return { authenticated: false };
     }
-  },
+
+    // ⚠️ fallback to localStorage
+    const localUser = localStorage.getItem('user');
+    if (localUser) {
+      return {
+        authenticated: true,
+        user: JSON.parse(localUser)
+      };
+    }
+
+    return { authenticated: false };
+
+  } catch (error) {
+    console.error('❌ Auth check error:', error.message);
+
+    // ⚠️ fallback if API fails
+    const localUser = localStorage.getItem('user');
+    if (localUser) {
+      return {
+        authenticated: true,
+        user: JSON.parse(localUser)
+      };
+    }
+
+    return { authenticated: false };
+  }
+},
   
   // SMS Services
   sendSMSOTP: async (phoneNumber) => {
@@ -62,6 +89,7 @@ export const authService = {
   },
   verifySMSOTP: async (phoneNumber, otpCode, name) => {
     const response = await api.post('/sms/verify-otp', { phoneNumber, otpCode, name });
+    console.log('📡 Verify response:', response.data);
     if (response.data.user) updateUserData(response.data.user);
     return response.data;
   },
@@ -76,10 +104,18 @@ export const authService = {
     return response.data;
   },
   verifyWhatsAppOTP: async (phoneNumber, otpCode, name) => {
-    const response = await api.post('/whatsapp/verify-otp', { phoneNumber, otpCode, name });
-    if (response.data.user) updateUserData(response.data.user);
-    return response.data;
-  },
+  const response = await api.post('/whatsapp/verify-otp', { phoneNumber, otpCode, name });
+  console.log('📡 WhatsApp verify response:', response.data);
+  if (response.data.user) {
+    // Force set preferredChannel
+    const userData = {
+      ...response.data.user,
+      preferredChannel: response.data.channel || 'whatsapp'
+    };
+    updateUserData(userData);
+  }
+  return response.data;
+},
   resendWhatsAppOTP: async (phoneNumber) => {
     const response = await api.post('/whatsapp/resend-otp', { phoneNumber });
     return response.data;

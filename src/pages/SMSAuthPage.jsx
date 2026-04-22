@@ -4,6 +4,7 @@ import SMSPhoneInput from '../components/sms/SMSPhoneInput';
 import SMSOTPInput from '../components/sms/SMSOTPInput';
 import { useToast } from '../context/ToastContext';
 import { useSendSMSOTP, useVerifySMSOTP, useResendSMSOTP } from '../hooks/useAuth';
+import { useQueryClient } from '@tanstack/react-query';
 
 const SMSAuthPage = () => {
   const navigate = useNavigate();
@@ -11,7 +12,7 @@ const SMSAuthPage = () => {
   const [step, setStep] = useState('phone');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [userName, setUserName] = useState('');
-
+  const queryClient = useQueryClient();
   const sendOTPMutation = useSendSMSOTP();
   const verifyOTPMutation = useVerifySMSOTP();
   const resendOTPMutation = useResendSMSOTP();
@@ -29,25 +30,29 @@ const SMSAuthPage = () => {
       showToast(error.response?.data?.message || 'Failed to send OTP', 'error');
     }
   };
+const handleVerifyOTP = async (otpCode) => {
+  try {
+    const data = await verifyOTPMutation.mutateAsync({ 
+      phoneNumber, 
+      otpCode, 
+      name: userName || 'User' 
+    });
 
-  const handleVerifyOTP = async (otpCode) => {
-    try {
-      const data = await verifyOTPMutation.mutateAsync({ 
-        phoneNumber, 
-        otpCode, 
-        name: userName || 'User' 
-      });
-      if (data.verified) {
-        showToast('✅ Phone number is verified successfully!', 'success');
-         navigate('/dashboard');
-      } else {
-        showToast(data.message || 'Invalid OTP', 'error');
-      }
-    } catch (error) {
-      showToast(error.response?.data?.message || 'Failed to verify OTP', 'error');
+    console.log("VERIFY RESPONSE:", data);
+
+    if (data.verified) {
+      // ✅ IMPORTANT: wait for auth state update
+      await queryClient.invalidateQueries({ queryKey: ['auth', 'check'] });
+
+      navigate('/dashboard');
+    } else {
+      showToast(data.message || 'Invalid OTP', 'error');
     }
-  };
-
+  } catch (error) {
+    console.error(error);
+    showToast(error.response?.data?.message || 'Failed to verify OTP', 'error');
+  }
+};
   const handleResendOTP = async () => {
     try {
       const data = await resendOTPMutation.mutateAsync(phoneNumber);

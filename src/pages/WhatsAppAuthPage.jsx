@@ -4,6 +4,7 @@ import WhatsAppPhoneInput from '../components/whatsapp/WhatsAppPhoneInput';
 import WhatsAppOTPInput from '../components/whatsapp/WhatsAppOTPInput';
 import { useToast } from '../context/ToastContext';
 import { useSendWhatsAppOTP, useVerifyWhatsAppOTP, useResendWhatsAppOTP } from '../hooks/useAuth';
+import { useQueryClient } from '@tanstack/react-query';
 
 const WhatsAppAuthPage = () => {
   const navigate = useNavigate();
@@ -15,6 +16,7 @@ const WhatsAppAuthPage = () => {
   const sendOTPMutation = useSendWhatsAppOTP();
   const verifyOTPMutation = useVerifyWhatsAppOTP();
   const resendOTPMutation = useResendWhatsAppOTP();
+  const queryClient = useQueryClient();
 
   const handleSendOTP = async (number) => {
     try {
@@ -34,22 +36,28 @@ const WhatsAppAuthPage = () => {
   };
 
   const handleVerifyOTP = async (otpCode) => {
-    try {
-      const data = await verifyOTPMutation.mutateAsync({ 
-        phoneNumber, 
-        otpCode, 
-        name: userName || 'User' 
-      });
-      if (data.verified) {
-        showToast('✅ Phone number verified successfully!', 'success');
-        navigate('/dashboard');
-      } else {
-        showToast(data.message || 'Invalid OTP', 'error');
-      }
-    } catch (error) {
-      showToast(error.response?.data?.message || 'Failed to verify OTP', 'error');
+  try {
+    const data = await verifyOTPMutation.mutateAsync({ 
+      phoneNumber, 
+      otpCode, 
+      name: userName || 'User' 
+    });
+
+    console.log("VERIFY RESPONSE:", data);
+
+    if (data.verified) {
+      // ✅ IMPORTANT: wait for auth state update
+      await queryClient.invalidateQueries({ queryKey: ['auth', 'check'] });
+
+      navigate('/dashboard');
+    } else {
+      showToast(data.message || 'Invalid OTP', 'error');
     }
-  };
+  } catch (error) {
+    console.error(error);
+    showToast(error.response?.data?.message || 'Failed to verify OTP', 'error');
+  }
+};
 
   const handleResendOTP = async () => {
     try {
