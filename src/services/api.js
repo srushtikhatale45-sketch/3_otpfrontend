@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const getBaseURL = () => {
   if (import.meta.env.PROD) {
-    return 'http://localhost:5000/api';
+    return 'https://three-otpservicebackend.onrender.com/api';
   }
   return 'http://localhost:5000/api';
 };
