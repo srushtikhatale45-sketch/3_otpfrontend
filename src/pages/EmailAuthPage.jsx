@@ -38,7 +38,7 @@ const EmailAuthPage = () => {
       });
       if (data.verified) {
         showToast('✅ Email verified successfully!', 'success');
-        setTimeout(() => navigate('/dashboard'), 1000);
+       navigate('/dashboard');
       } else {
         showToast(data.message || 'Invalid OTP', 'error');
       }

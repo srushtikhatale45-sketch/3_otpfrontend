@@ -39,7 +39,7 @@ const SMSAuthPage = () => {
       });
       if (data.verified) {
         showToast('✅ Phone number is verified successfully!', 'success');
-        setTimeout(() => navigate('/dashboard'), 1000);
+         navigate('/dashboard');
       } else {
         showToast(data.message || 'Invalid OTP', 'error');
       }
